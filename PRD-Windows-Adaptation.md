@@ -1,10 +1,10 @@
-# Guitar AutoStomp — Windows 适配版产品需求文档 (PRD)
+# Guitar AutoStomp — Windows 适配版产品���求文档 (PRD)
 
 ## 1. 项目概述
 
 ### 1.1 背景
 
-Guitar AutoStomp 是一款吉他音色自动切换桌面应用，通过 Virtual MIDI + Timeline Trigger 在音频播放时自动切换 Neural DSP 插件音色。Mac 版本已开发完成（Electron + Next.js + Python stdio JSON-RPC），本文档定义 Windows 适配版本的需求与���现规范。
+Guitar AutoStomp 是一款吉他音色自动切换桌面应用，通过 Virtual MIDI + Timeline Trigger 在音频播放时自动切换 Neural DSP 插件音色。Mac 版本已开发完成（Electron + Next.js + Python stdio JSON-RPC），本文档定义 Windows 适配版本的需求与实现规范。
 
 ### 1.2 目标
 
@@ -30,7 +30,7 @@ Guitar AutoStomp 是一款吉他音色自动切换桌面应用，通过 Virtual 
 **验收标准**：
 - [ ] 项目结构与 Mac 版一致（`electron/`、`backend/`、`src/`、`scripts/`、`data/`）
 - [ ] 移除 Mac 专用文件（`.DS_Store`、`dist-backend/` 中的 macOS 二进制等）
-- [ ] `package.json` 中 `name` 改为 `guitar-autostomp-win`
+- [ ] `package.json` 中 `name` 改��� `guitar-autostomp-win`
 
 ---
 
@@ -63,7 +63,7 @@ Guitar AutoStomp 是一款吉他音色自动切换桌面应用，通过 Virtual 
 
 ```
 启动流程：
-1. 检测系统是否已有 loopMIDI 创建的端口（端口名包含 "loopMIDI" 或自定义名称）
+1. 检测系统是否已有 loopMIDI ��建的端口（端口名包含 "loopMIDI" 或自定义名称）
 2. 若已有 → 自动连接该端口作为默认输出
 3. 若没有 → 返回状态，前端弹窗引导用户安装 loopMIDI 或创建端口
 4. 降级方案：列出所有可用 MIDI 输出端口，让用户手动选择 DAW 的 MIDI 输入端口
@@ -90,7 +90,7 @@ Guitar AutoStomp 是一款吉他音色自动切换桌面应用，通过 Virtual 
 **关键差异**：
 - 输出为 `.exe` 文件
 - 需要包含 `ffmpeg.exe` 和 `ffprobe.exe`（Windows 版本）
-- `python-rtmidi` 在 Windows 上依赖 `winmm.dll`（系统自带）
+- `python-rtmidi` 在 Windows 上依赖 `winmm.dll`（系统自��）
 - 打包模式：`onedir`（与 Mac 版一致，方便调试）
 
 **验收标准**：
@@ -123,7 +123,7 @@ Guitar AutoStomp 是一款吉他音色自动切换桌面应用，通过 Virtual 
 **适配项**：
 - 移除顶部为 macOS traffic light 按钮预留的 padding-left
 - 调整侧边栏顶部间距（Mac 上为绕开红绿灯按钮，Windows 不需要）
-- 确保内容区域无多余空白
+- 确保内容区域无多��空白
 
 **验收标准**：
 - [ ] Windows 上窗口有标准的最小化/最大化/关闭按钮
@@ -215,7 +215,7 @@ Guitar AutoStomp 是一款吉他音色自动切换桌面应用，通过 Virtual 
 
 - **风险**：不同用户的 Neural DSP 安装路径可能不同
 - **降级**：提供设置页面允许用户手动指定预设目录
-- **自动扫描**：按优先级尝试多个常见��径
+- **自动扫描**：按优先级尝试多个常见路径
 
 ### 4.3 python-rtmidi 编译问题
 
@@ -288,7 +288,7 @@ Guitar AutoStomp Win/
 ├── .gitignore
 ├── electron-builder.yml     # Windows 专用配置
 ├── next.config.ts
-├── package.json             # Windows 版���置
+├── package.json             # Windows 版配置
 ├── postcss.config.mjs
 ├── tsconfig.json
 ├── vitest.config.ts

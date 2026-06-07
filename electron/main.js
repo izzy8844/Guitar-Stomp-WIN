@@ -132,7 +132,7 @@ function handleBackendLine(line) {
 
 // ─────────────────────────────────────────────────────────────
 // Start Python Backend (stdio mode)
-// ─────────────────────────────────────────────────────────────
+// ──────��──────────────────────────────────────────────────────
 
 function startBackend() {
   let execPath;
@@ -377,7 +377,7 @@ function buildRpcParams(httpMethod, reqPath, body) {
 
 // ─────────────────────────────────────────────────────────────
 // Create Main Window
-// ──────────────────────��──────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 
 function createWindow() {
   const isMac = process.platform === 'darwin';
@@ -414,7 +414,7 @@ function createWindow() {
 
 // ─────────────────────────────────────────────────────────────
 // Custom Protocol Handler
-// ─────────────────────────────────────────���───────────────────
+// ─────────────────────────────────────────────────────────────
 
 function registerCustomProtocol() {
   let rendererDir = path.join(process.resourcesPath, 'renderer');
@@ -456,7 +456,7 @@ function registerCustomProtocol() {
   console.log(`[App] Custom protocol "${CUSTOM_SCHEME}://" registered, serving from: ${rendererDir}`);
 }
 
-// ─────────────────���───────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // App Lifecycle
 // ─────────────────────────────────────────────────────────────
 

@@ -24,5 +24,5 @@ ffprobe.exe -version
 ## 注意事项
 
 - 这两个文件不包含在 Git 仓库中（已在 .gitignore 排除）
-- PyInstaller 打包时会自动将它们打入 `_internal/` ��录
+- PyInstaller 打包时会自动将它们打入 `_internal/` 目录
 - 如果没有这两个文件，应用仍可运行，但波形提取可能失败（fallback 使用 soundfile）
