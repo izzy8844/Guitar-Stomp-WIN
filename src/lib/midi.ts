@@ -63,46 +63,8 @@ export function getCurrentPortId(): string | null {
   return currentOutput?.id ?? null;
 }
 
-export function sendProgramChange(
-  program: number,
-  channel: number = 0
-): boolean {
-  if (!currentOutput) {
-    console.warn("[MIDI] No output port selected");
-    return false;
-  }
-  try {
-    const statusByte = 0xc0 | (channel & 0x0f);
-    const programByte = program & 0x7f;
-    currentOutput.send([statusByte, programByte]);
-    console.log(
-      `[MIDI] Sent PC: program=${program}, channel=${channel}`
-    );
-    return true;
-  } catch (err) {
-    console.error("[MIDI] Send PC failed:", err);
-    return false;
-  }
-}
-
-export function sendControlChange(
-  controller: number,
-  value: number,
-  channel: number = 0
-): boolean {
-  if (!currentOutput) {
-    console.warn("[MIDI] No output port selected");
-    return false;
-  }
-  try {
-    const statusByte = 0xb0 | (channel & 0x0f);
-    currentOutput.send([statusByte, controller & 0x7f, value & 0x7f]);
-    return true;
-  } catch (err) {
-    console.error("[MIDI] Send CC failed:", err);
-    return false;
-  }
-}
+// Note: MIDI message sending (PC/CC) is handled exclusively by the Python backend
+// via stdio JSON-RPC. The Web MIDI API here is only used for port enumeration/display.
 
 export function onPortChange(
   fn: (ports: MidiPortInfo[]) => void
@@ -113,10 +75,5 @@ export function onPortChange(
   };
 }
 
-export function detectOS(): "mac" | "windows" | "linux" | "unknown" {
-  const ua = navigator.userAgent.toLowerCase();
-  if (ua.includes("mac")) return "mac";
-  if (ua.includes("win")) return "windows";
-  if (ua.includes("linux")) return "linux";
-  return "unknown";
-}
+
+`

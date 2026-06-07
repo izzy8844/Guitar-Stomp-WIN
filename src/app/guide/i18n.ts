@@ -55,7 +55,11 @@ export const content: Record<Locale, {
       {
         id: 'midi',
         title: 'MIDI Configuration',
-        content: ['Guitar AutoStomp uses a virtual MIDI port to communicate with your Neural DSP plugin. The app automatically creates the necessary MIDI mapping XML files in the correct format.'],
+        content: [
+          'Guitar AutoStomp uses a virtual MIDI port to communicate with your Neural DSP plugin. The app automatically creates the necessary MIDI mapping XML files in the correct format.',
+          'On macOS, the app automatically creates a native virtual MIDI port — no extra setup needed.',
+          'On Windows, you need to install loopMIDI (https://www.tobias-erichsen.de/software/loopmidi.html) and create a port named "AutoStomp Virtual". The app will auto-detect it on startup.',
+        ],
       },
       {
         id: 'presets',
@@ -96,7 +100,7 @@ export const content: Record<Locale, {
       },
       {
         title: '映射与安装',
-        content: ['在设置页面中，选择你想要的预设，通过拖拽排列顺序，然后点击"自动映射并安装"生成并安装 MIDI 映射 XML 文件。'],
+        content: ['在设��页面中，选择你想要的预设，通过拖拽排列顺序，然后点击"自动映射并安装"生成并安装 MIDI 映射 XML 文件。'],
       },
       {
         title: '播放',
@@ -107,12 +111,16 @@ export const content: Record<Locale, {
       {
         id: 'midi',
         title: 'MIDI 配置',
-        content: ['Guitar AutoStomp 使用虚拟 MIDI 端口与你的 Neural DSP 插件通信。应用会自动创建正确格式的 MIDI 映射 XML 文件。'],
+        content: [
+          'Guitar AutoStomp 使用虚拟 MIDI 端口与你的 Neural DSP 插件通信。应用会自动创建正确格式的 MIDI 映射 XML 文件。',
+          'macOS 上，应用会自动创建原生虚拟 MIDI 端口，无需额外设置。',
+          'Windows 上，你需要安装 loopMIDI（https://www.tobias-erichsen.de/software/loopmidi.html），并创建一个名为 "AutoStomp Virtual" 的端口。应用启动时会自动检测该端口。',
+        ],
       },
       {
         id: 'presets',
         title: '预设管理',
-        content: ['用户预设从插件的预设目录中扫描。你可以按来源筛选（用户、艺术家、出厂），并重新排序以匹配你期望的 Program Change 序列。'],
+        content: ['用户预设从插件的预设目录中扫描。你可以按来源筛选（用户、艺术家、出厂），��重新排序以匹配你期望的 Program Change 序列。'],
       },
     ],
     shortcuts: [
@@ -128,3 +136,5 @@ export const content: Record<Locale, {
     cta: '返回项目',
   },
 }
+
+`

@@ -48,12 +48,12 @@ echo.
 REM --- Install Python dependencies ---
 echo [2/6] Installing Python dependencies...
 cd backend
-pip install -r requirements.txt --quiet
+pip install -r requirements.txt --progress-bar off
 if %errorlevel% neq 0 (
     echo ERROR: Failed to install Python dependencies
     exit /b 1
 )
-pip install pyinstaller --quiet
+pip install pyinstaller --progress-bar off
 if %errorlevel% neq 0 (
     echo ERROR: Failed to install PyInstaller
     exit /b 1
@@ -124,3 +124,5 @@ echo Output: release\Guitar-AutoStomp-Setup-1.0.0.exe
 echo.
 
 endlocal
+
+`

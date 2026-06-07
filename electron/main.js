@@ -1,9 +1,12 @@
 const { app, BrowserWindow, dialog, ipcMain, protocol, net: electronNet } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const { pathToFileURL } = require('url');
 const { randomUUID } = require('crypto');
+
+// --- Windows High DPI Support ---
+app.commandLine.appendSwitch('high-dpi-support', '1');
 
 // --- Configuration ---
 const IS_DEV = process.env.NODE_ENV === 'development';
@@ -132,7 +135,7 @@ function handleBackendLine(line) {
 
 // ─────────────────────────────────────────────────────────────
 // Start Python Backend (stdio mode)
-// ──────��──────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 
 function startBackend() {
   let execPath;
@@ -140,7 +143,20 @@ function startBackend() {
   let cwd;
 
   if (IS_DEV) {
-    execPath = process.platform === 'win32' ? 'python' : 'python3';
+    if (process.platform === 'win32') {
+      // Windows: try python → py (Python Launcher for Windows) → python3
+      const candidates = ['python', 'py', 'python3'];
+      execPath = candidates[0]; // default fallback
+      for (const cmd of candidates) {
+        try {
+          execSync(`${cmd} --version`, { stdio: 'ignore', timeout: 5000 });
+          execPath = cmd;
+          break;
+        } catch {}
+      }
+    } else {
+      execPath = 'python3';
+    }
     cwd = path.join(__dirname, '..', 'backend');
     args = ['main_stdio.py'];
   } else {
@@ -375,7 +391,7 @@ function buildRpcParams(httpMethod, reqPath, body) {
   return params;
 }
 
-// ─────────────────────────────────────────────────────────────
+// ───────────────────���─────────────────────────────────────────
 // Create Main Window
 // ─────────────────────────────────────────────────────────────
 
@@ -412,7 +428,7 @@ function createWindow() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────��─────────────────────
 // Custom Protocol Handler
 // ─────────────────────────────────────────────────────────────
 
@@ -485,13 +501,17 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   app.isQuitting = true;
-  // Kill backend process — since it's our child process using stdio,
-  // closing stdin will cause it to exit gracefully
+  // Gracefully shutdown backend process
   if (backendProcess) {
+    try {
+      // Send shutdown RPC notification so backend can flush pending writes
+      const shutdownMsg = JSON.stringify({ jsonrpc: '2.0', method: 'shutdown', id: 'exit' }) + '\n';
+      backendProcess.stdin.write(shutdownMsg);
+    } catch {}
     try {
       backendProcess.stdin.end();  // Close stdin → Python reads EOF → exits
     } catch {}
-    // Give it a moment, then force kill
+    // Give backend 3s to finish gracefully, then force kill
     // Note: SIGTERM is not supported on Windows; calling kill() with no args
     // sends SIGTERM on Unix and terminates the process on Windows.
     setTimeout(() => {
@@ -499,7 +519,7 @@ app.on('before-quit', () => {
         try { backendProcess.kill(); } catch {}
         backendProcess = null;
       }
-    }, 1000);
+    }, 3000);
   }
 });
 
@@ -508,3 +528,5 @@ app.on('activate', () => {
     createWindow();
   }
 });
+
+`

@@ -13,6 +13,7 @@ No TCP ports are used. The process lifetime is managed by Electron.
 """
 import sys
 import json
+import platform
 import threading
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
@@ -50,7 +51,15 @@ def _validate_audio_path(path_str: str) -> Path:
         raise ValueError("Missing file path")
     resolved = Path(path_str).resolve()
     # Security: only allow paths under user home or PROJECTS_DIR
-    if not (str(resolved).startswith(str(_USER_HOME)) or str(resolved).startswith(str(PROJECTS_DIR))):
+    # Use case-insensitive comparison on Windows (drive letters may differ in case)
+    resolved_str = str(resolved)
+    home_str = str(_USER_HOME)
+    projects_str = str(PROJECTS_DIR)
+    if platform.system() == "Windows":
+        resolved_str = resolved_str.lower()
+        home_str = home_str.lower()
+        projects_str = projects_str.lower()
+    if not (resolved_str.startswith(home_str) or resolved_str.startswith(projects_str)):
         raise PermissionError(f"Access denied: path is outside allowed directories")
     return resolved
 
@@ -409,10 +418,19 @@ def handle_init_auto_setup(params):
         raise ValueError(str(e))
 
 
+# ─── Shutdown handler ───
+
+def handle_shutdown(params):
+    """Graceful shutdown — flush pending thread pool work and exit."""
+    _thread_pool.shutdown(wait=True, cancel_futures=False)
+    return {"status": "bye"}
+
+
 # ─── Method dispatch table ───
 
 METHODS = {
     "health": handle_health,
+    "shutdown": handle_shutdown,
     # Audio
     "audio.upload": handle_audio_upload,
     "audio.waveform": handle_audio_waveform,
@@ -509,3 +527,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+`

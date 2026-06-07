@@ -4,8 +4,9 @@ MIDI XML Generator — 生成 Neural DSP 兼容的 MIDI 映射文件
 核心机制：Neural DSP 插件使用 JUCE hashCode64(preset_absolute_path) 作为预设 ID。
 本模块基于此算法，自动扫描预设 → 计算 ID → 生成合法的 XML 映射文件。
 
-安装路径：~/Library/Application Support/Neural DSP/<PluginName>/MIDI Mappings/
-（不是 ~/Library/Audio/Presets — 那里存的是预设文件本身）
+安装路径（MIDI Mappings 目录，不是预设目录）：
+  macOS:   ~/Library/Application Support/Neural DSP/<PluginName>/MIDI Mappings/
+  Windows: %APPDATA%\\Neural DSP\\<PluginName>\\MIDI Mappings\\
 """
 import os
 import re
@@ -143,7 +144,9 @@ def _generate_new_format(plugin_name: str, mappings: List[PresetMapping], meta: 
 def save_mapping(plugin_name: str, xml_content: str, filename: str) -> str:
     """
     Save mapping to Neural DSP plugin's MIDI config directory.
-    Path: ~/Library/Application Support/Neural DSP/<Plugin>/MIDI Mappings/<filename>
+    Path: NEURAL_DSP_USER_CONFIG/<Plugin>/MIDI Mappings/<filename>
+      macOS:   ~/Library/Application Support/Neural DSP/<Plugin>/MIDI Mappings/
+      Windows: %APPDATA%\\Neural DSP\\<Plugin>\\MIDI Mappings\\
     Also saves a backup to local project ./mappings/ dir.
     """
     # Save backup to local project dir
@@ -158,7 +161,7 @@ def save_mapping(plugin_name: str, xml_content: str, filename: str) -> str:
 
 
 def _install_to_plugin_dir(plugin_name: str, xml_content: str, filename: str) -> str:
-    """Install XML to ~/Library/Application Support/Neural DSP/<Plugin>/MIDI Mappings/"""
+    """Install XML to NEURAL_DSP_USER_CONFIG/<Plugin>/MIDI Mappings/ (cross-platform)."""
     plugin_config_dir = NEURAL_DSP_USER_CONFIG / plugin_name
 
     # Check if plugin already has a MIDI directory (MIDI Mappings or MIDI)
@@ -365,3 +368,5 @@ def delete_mapping(plugin_name: str, filename: str) -> bool:
 def list_installed_mappings(plugin_name: str) -> List[dict]:
     """List installed mapping files for a plugin with parsed tone data."""
     return [m.model_dump() for m in list_mappings(plugin_name)]
+
+`
