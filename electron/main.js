@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, protocol, net: electronNet } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, protocol, net: electronNet, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn, execSync } = require('child_process');
@@ -477,6 +477,7 @@ function registerCustomProtocol() {
 // ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(async () => {
+  Menu.setApplicationMenu(null)  // Remove default File/Edit menu — all controls are in-app
   console.log('[App] Starting Guitar AutoStomp...');
   console.log(`[App] IS_DEV: ${IS_DEV}`);
   console.log(`[App] resourcesPath: ${process.resourcesPath}`);
