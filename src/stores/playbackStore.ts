@@ -16,6 +16,12 @@ interface PlaybackState {
    *  find on disk (file moved/deleted). null when audio is healthy. Transient,
    *  not persisted — drives the "relocate audio" prompt. */
   audioMissingPath: string | null; setAudioMissingPath: (p: string | null) => void
+  /** Current stage of audio loading pipeline. Transient, not persisted. */
+  audioLoadStage: 'idle' | 'uploading' | 'transferring' | 'decoding' | 'analyzing' | 'ready'
+  setAudioLoadStage: (s: 'idle' | 'uploading' | 'transferring' | 'decoding' | 'analyzing' | 'ready') => void
+  /** 0-100 progress within the current stage (best-effort). Transient, not persisted. */
+  audioLoadProgress: number
+  setAudioLoadProgress: (p: number) => void
   setIsPlaying: (v: boolean) => void; setCurrentTick: (t: number) => void; setDuration: (d: number) => void
   setMidiPorts: (p: string[]) => void; setCurrentMidiPort: (p: string | null) => void
   setLastMidiEvent: (e: { pc?: number; program?: number; name?: string } | null) => void
@@ -44,6 +50,8 @@ export const usePlaybackStore = create<PlaybackState>((set, get) => ({
   wsConnected: false, wsStatus: 'disconnected', activeTriggerIndex: -1,
   bpm: 0, setBpm: (v) => set({ bpm: v }),
   audioMissingPath: null, setAudioMissingPath: (p) => set({ audioMissingPath: p }),
+  audioLoadStage: 'idle', setAudioLoadStage: (s) => set({ audioLoadStage: s }),
+  audioLoadProgress: 0, setAudioLoadProgress: (p) => set({ audioLoadProgress: p }),
   setIsPlaying: (v) => set({ isPlaying: v }),
   setCurrentTick: (t) => set({ currentTick: t }),
   setDuration: (d) => set({ duration: d }),

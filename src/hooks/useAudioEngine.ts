@@ -24,7 +24,7 @@ import { updateProject, createProject } from '@/lib/api'
 import { storeToBackendUpdate } from '@/lib/projectMapping'
 import { toast } from '@/components/Toast'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────��──────────────
 
 interface Trigger {
   id: string
@@ -294,10 +294,19 @@ async function loadAudio(filePath: string, isUserUpload: boolean = false): Promi
     _startOffset = 0
     _audioBuffer = cached
     _loadedPath = filePath
-    usePlaybackStore.getState().setCurrentTick(0)
-    usePlaybackStore.getState().setIsPlaying(false)
-    usePlaybackStore.getState().setDuration(cached.duration)
-    usePlaybackStore.getState().setAudioMissingPath(null)
+    const pbCache = usePlaybackStore.getState()
+    pbCache.setCurrentTick(0)
+    pbCache.setIsPlaying(false)
+    pbCache.setDuration(cached.duration)
+    pbCache.setAudioMissingPath(null)
+    pbCache.setAudioLoadStage('ready')
+    pbCache.setAudioLoadProgress(100)
+    // Auto-clear the ready banner after 2 s
+    setTimeout(() => {
+      if (usePlaybackStore.getState().audioLoadStage === 'ready') {
+        usePlaybackStore.getState().setAudioLoadStage('idle')
+      }
+    }, 2000)
     console.log(`[AudioEngine] Cache hit: ${filePath}, duration=${cached.duration}`)
     if (isUserUpload) {
       renameProjectToAudio(filePath)
@@ -316,42 +325,72 @@ async function loadAudio(filePath: string, isUserUpload: boolean = false): Promi
     usePlaybackStore.getState().setCurrentTick(0)
     usePlaybackStore.getState().setIsPlaying(false)
 
+    // ── Stage 1: transferring (reading audio data from disk) ──
+    usePlaybackStore.getState().setAudioLoadStage('transferring')
+    usePlaybackStore.getState().setAudioLoadProgress(5)  // show a sliver immediately
+
     const ctx = getAudioContext()
     let arrayBuffer: ArrayBuffer
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const electronAPI = (window as any).electronAPI
     if (electronAPI) {
-      // v2: Use RPC to get audio data as base64, then decode to ArrayBuffer
-      const result = await electronAPI.rpcCall('audio.serve', { path: filePath })
-      // Stale check after first await
-      if (thisVersion !== _loadVersion) {
-        console.log(`[AudioEngine] STALE after rpcCall: thisVersion=${thisVersion}, _loadVersion=${_loadVersion}, file=${filePath}`)
-        return false
-      }
-
-      // Backend returns { data: base64string, size: number }
-      if (result && result.data) {
-        const binaryStr = atob(result.data)
-        const bytes = new Uint8Array(binaryStr.length)
-        for (let i = 0; i < binaryStr.length; i++) {
-          bytes[i] = binaryStr.charCodeAt(i)
+      // v3: Use direct file read via Electron main process (no base64 via Python).
+      // This handles MP4/video → WAV conversion automatically via FFmpeg in main.
+      if (electronAPI.readAudioFile) {
+        const result = await electronAPI.readAudioFile(filePath)
+        // Stale check after file read
+        if (thisVersion !== _loadVersion) {
+          console.log(`[AudioEngine] STALE after readAudioFile: thisVersion=${thisVersion}, _loadVersion=${_loadVersion}, file=${filePath}`)
+          usePlaybackStore.getState().setAudioLoadStage('idle')
+          return false
         }
-        arrayBuffer = bytes.buffer
+        arrayBuffer = result.buffer
+        if (result.converted) {
+          console.log(`[AudioEngine] Video converted to WAV (original: ${(result.originalSize / 1024 / 1024).toFixed(1)}MB)`)
+        }
+        usePlaybackStore.getState().setAudioLoadProgress(30)
       } else {
-        throw new Error('Backend returned no audio data')
+        // Fallback: old base64 path via Python backend (for backward compat)
+        const result = await electronAPI.rpcCall('audio.serve', { path: filePath })
+        // Stale check after first await
+        if (thisVersion !== _loadVersion) {
+          console.log(`[AudioEngine] STALE after rpcCall: thisVersion=${thisVersion}, _loadVersion=${_loadVersion}, file=${filePath}`)
+          usePlaybackStore.getState().setAudioLoadStage('idle')
+          return false
+        }
+        if (result && result.data) {
+          // ── Stage 2: decoding (atob + ArrayBuffer conversion) ──
+          usePlaybackStore.getState().setAudioLoadStage('decoding')
+          usePlaybackStore.getState().setAudioLoadProgress(10)
+          const binaryStr = atob(result.data)
+          const bytes = new Uint8Array(binaryStr.length)
+          for (let i = 0; i < binaryStr.length; i++) {
+            bytes[i] = binaryStr.charCodeAt(i)
+          }
+          arrayBuffer = bytes.buffer
+          usePlaybackStore.getState().setAudioLoadProgress(30)
+        } else {
+          throw new Error('Backend returned no audio data')
+        }
       }
     } else {
       // Browser / dev mode: no backend available without Electron
       throw new Error('Audio loading requires Electron (no backend in browser-only mode)')
     }
 
+    // ── Stage 3: Web Audio decodeAudioData (heaviest step) ──
+    usePlaybackStore.getState().setAudioLoadStage('decoding')
+    usePlaybackStore.getState().setAudioLoadProgress(40)
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+    usePlaybackStore.getState().setAudioLoadProgress(80)
+
     // Stale check after decode (the heaviest async operation)
     if (thisVersion !== _loadVersion) {
       console.log(`[AudioEngine] STALE after decode: thisVersion=${thisVersion}, _loadVersion=${_loadVersion}, file=${filePath}`)
       // Still cache the decoded buffer even if stale — it may be needed soon
       cachePut(filePath, audioBuffer)
+      usePlaybackStore.getState().setAudioLoadStage('idle')
       return false
     }
 
@@ -361,6 +400,7 @@ async function loadAudio(filePath: string, isUserUpload: boolean = false): Promi
     // Audio loaded successfully → clear any prior "file missing" flag
     usePlaybackStore.getState().setAudioMissingPath(null)
     usePlaybackStore.getState().setDuration(audioBuffer.duration)
+    usePlaybackStore.getState().setAudioLoadProgress(90)
     console.log(`[AudioEngine] Loaded: ${filePath} (${audioBuffer.duration.toFixed(1)}s, ${audioBuffer.sampleRate}Hz)`)
 
     // Auto-rename + auto-save only on user upload (not on project switch reload)
@@ -369,12 +409,25 @@ async function loadAudio(filePath: string, isUserUpload: boolean = false): Promi
       autoSaveProject()
     }
 
-    // Auto-detect BPM
-    detectBpm(audioBuffer)
+    // ── Stage 4: BPM analysis ──
+    usePlaybackStore.getState().setAudioLoadStage('analyzing')
+    await detectBpm(audioBuffer)
+
+    // ── Done ──
+    usePlaybackStore.getState().setAudioLoadStage('ready')
+    usePlaybackStore.getState().setAudioLoadProgress(100)
+    // Auto-clear the ready banner after 2 s so it doesn't linger
+    setTimeout(() => {
+      if (usePlaybackStore.getState().audioLoadStage === 'ready') {
+        usePlaybackStore.getState().setAudioLoadStage('idle')
+      }
+    }, 2000)
 
     return true
   } catch (err) {
     console.error('[AudioEngine] loadAudio failed:', err)
+    usePlaybackStore.getState().setAudioLoadStage('idle')
+    usePlaybackStore.getState().setAudioLoadProgress(0)
     // Distinguish "file moved/deleted on disk" from other failures so the UI
     // can offer a "relocate audio" action instead of silently failing.
     const code = (err as { code?: string } | null)?.code
@@ -440,7 +493,7 @@ async function autoSaveProject() {
 }
 
 /** Detect BPM from AudioBuffer using web-audio-beat-detector */
-async function detectBpm(buffer: AudioBuffer) {
+async function detectBpm(buffer: AudioBuffer): Promise<void> {
   try {
     usePlaybackStore.getState().setBpm(0) // reset while detecting
     const { guess } = await import('web-audio-beat-detector')

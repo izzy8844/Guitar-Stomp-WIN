@@ -139,6 +139,8 @@ export default function Home() {
   const audioFile = useProjectStore((s) => s.audioFile)
   const duration = usePlaybackStore((s) => s.duration)
   const audioMissingPath = usePlaybackStore((s) => s.audioMissingPath)
+  const audioLoadStage = usePlaybackStore((s) => s.audioLoadStage)
+  const audioLoadProgress = usePlaybackStore((s) => s.audioLoadProgress)
   useEffect(() => {
     if (!audioFile || duration === 0) { setWaveformData(undefined); return }
     // Try to get peaks from the decoded AudioBuffer (client-side, no backend dependency)
@@ -158,6 +160,10 @@ export default function Home() {
 
   const handleSave = useCallback(async () => {
     const store = useProjectStore.getState()
+    if (store.isDemo) {
+      toast.info('Demo project cannot be saved. Create a new project first.')
+      return
+    }
     setSaving(true)
     try {
       const projectData = {
@@ -290,6 +296,8 @@ export default function Home() {
     }
 
     setUploading(true)
+    usePlaybackStore.getState().setAudioLoadStage('uploading')
+    usePlaybackStore.getState().setAudioLoadProgress(5)  // show a sliver immediately
     try {
       const data = await uploadAudio(file)
       if (data.path) {
@@ -320,6 +328,11 @@ export default function Home() {
       }
     } finally {
       setUploading(false)
+      // If still in 'uploading' stage (e.g. fallback path), reset to idle
+      if (usePlaybackStore.getState().audioLoadStage === 'uploading') {
+        usePlaybackStore.getState().setAudioLoadStage('idle')
+        usePlaybackStore.getState().setAudioLoadProgress(0)
+      }
     }
     e.target.value = ''
   }
@@ -364,6 +377,30 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Audio load progress bar */}
+      {audioLoadStage !== 'idle' && (
+        <div className="shrink-0 px-6 py-1.5 bg-zinc-950 border-b border-zinc-800">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-zinc-400 w-28 shrink-0">
+              {audioLoadStage === 'uploading' && '上传中…'}
+              {audioLoadStage === 'transferring' && '读取音频…'}
+              {audioLoadStage === 'decoding' && '解码中…'}
+              {audioLoadStage === 'analyzing' && '分析节拍…'}
+              {audioLoadStage === 'ready' && '✓ 就绪'}
+            </span>
+            <div className="flex-1 h-1 rounded-full bg-zinc-800 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  audioLoadStage === 'ready' ? 'bg-green-500' : 'bg-green-600'
+                }`}
+                style={{ width: `${audioLoadProgress}%` }}
+              />
+            </div>
+            <span className="text-xs text-zinc-500 w-8 text-right shrink-0">{audioLoadProgress}%</span>
+          </div>
+        </div>
+      )}
+
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
         {sidebarOpen && <ProjectSidebar />}
@@ -387,8 +424,11 @@ export default function Home() {
                 </button>
               </div>
             )}
-            <Waveform waveformData={waveformData} onTriggerDrag={handleTriggerDrag} onAddTrigger={(timeMs) => handleAddTrigger(timeMs / 1000)} />
-            <ToneSegments onTriggerDrag={handleTriggerDrag} />
+            {/* Timeline group: Waveform + Tone segments share one visual block with synced scroll */}
+            <div className="relative flex flex-col rounded-lg border border-zinc-800/60 overflow-hidden">
+              <Waveform waveformData={waveformData} onTriggerDrag={handleTriggerDrag} onAddTrigger={(timeMs) => handleAddTrigger(timeMs / 1000)} />
+              <ToneSegments onTriggerDrag={handleTriggerDrag} />
+            </div>
             <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800">
               <span className="text-xs text-zinc-500 uppercase tracking-wide">Triggers</span>
               <button onClick={() => handleAddTrigger(usePlaybackStore.getState().currentTick)}

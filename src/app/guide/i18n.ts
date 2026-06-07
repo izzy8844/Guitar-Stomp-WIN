@@ -114,7 +114,7 @@ export const content: Record<Locale, {
         ],
         substeps: [
           {
-            title: '设置步骤',
+            title: '设置��骤',
             items: [
               '下载并安装 loopMIDI',
               '打开 loopMIDI，在底部端口名称输入框中输入 "AutoStomp Virtual"，然后点击 "+" 创建端口',
@@ -164,12 +164,12 @@ export const content: Record<Locale, {
     ],
     shortcuts: [
       { key: '空格键', desc: '播放 / 暂停' },
-      { key: '← →', desc: '后退 / 前进' },
+      { key: '�� →', desc: '后退 / 前进' },
       { key: 'A', desc: '设置 AB 循环起点' },
       { key: 'B', desc: '设置 AB 循环终点' },
     ],
     faq: [
-      { q: '为什么我听不到声音？', a: '请确保你的 Neural DSP 插件正在运行、loopMIDI 已启动且 "AutoStomp Virtual" 端口存在，同��插件 MIDI 设置中已启用该端口的输入。' },
+      { q: '为什么我听不到声音？', a: '请确保你的 Neural DSP 插件正在运行、loopMIDI 已启动且 "AutoStomp Virtual" 端口存在，同时插件 MIDI 设置中已启用该端口的输入。' },
       { q: 'loopMIDI 端口未被检测到？', a: '请确认 loopMIDI 正在运行，且端口名称中包含 "AutoStomp"。创建端口后需要重启本应用。' },
       { q: '如何添加更多触发器？', a: '点击触发器列表上方的绿色"+"按钮，或双击波形图在对应位置添加触发器。' },
     ],

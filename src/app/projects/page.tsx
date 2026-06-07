@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FolderOpen, Trash2, Plus } from "lucide-react";
 import { fetchProjects, createProject, deleteProject } from "@/lib/api";
+import { headerPaddingLeft } from '@/hooks/usePlatform';
 
 interface Project {
   id: string;
@@ -96,7 +97,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <header className="flex items-center justify-between pl-20 pr-6 py-4 border-b border-zinc-800">
+      <header className={`flex items-center justify-between ${headerPaddingLeft()} pr-6 py-4 border-b border-zinc-800`}>
         <div className="flex items-center gap-4">
           <Link href="/" className="text-zinc-400 hover:text-white transition-colors">
             <ArrowLeft className="w-5 h-5" />

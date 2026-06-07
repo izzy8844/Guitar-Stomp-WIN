@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Globe } from 'lucide-react'
 import { content, Locale } from './i18n'
+import { headerPaddingLeft } from '@/hooks/usePlatform'
 
 export default function GuidePage() {
   const [locale, setLocale] = useState<Locale>('zh')
@@ -13,7 +14,7 @@ export default function GuidePage() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* Sticky Header */}
       <header className="sticky top-0 z-40 bg-[#0a0a0a]/90 backdrop-blur-sm border-b border-zinc-800">
-        <div className="max-w-3xl mx-auto pl-20 pr-6 py-3 flex items-center justify-between">
+        <div className={`max-w-3xl mx-auto ${headerPaddingLeft()} pr-6 py-3 flex items-center justify-between`}>
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
               <ArrowLeft className="w-4 h-4" />

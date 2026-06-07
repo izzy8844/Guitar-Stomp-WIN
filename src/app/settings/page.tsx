@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Search, GripVertical, X, Play, Filter } from 'lucide-react'
 import { useMapperStore } from '@/stores/mapperStore'
+import { headerPaddingLeft } from '@/hooks/usePlatform'
 import { fetchPlugins, fetchPresets, testMidi, refreshMapping } from '@/lib/api'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -103,7 +104,7 @@ export default function SettingsPage() {
   return (
     <div className="h-screen bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
       {/* Header — fixed */}
-      <header className="flex items-center gap-4 pl-20 pr-6 py-3 border-b border-zinc-800 shrink-0">
+      <header className={`flex items-center gap-4 ${headerPaddingLeft()} pr-6 py-3 border-b border-zinc-800 shrink-0`}>
         <Link href="/" className="text-zinc-400 hover:text-white"><ArrowLeft className="w-5 h-5" /></Link>
         <h1 className="text-lg font-semibold">Tone Presets</h1>
       </header>

@@ -83,6 +83,24 @@ interface ProjectState {
 // backend) for crash recovery — it is NOT a mirror of backend projects.
 const DRAFT_KEY = 'guitar_autostomp_draft'
 const RECENT_TONES_KEY = 'guitar_autostomp_recent_tones'
+// Remembers the id of the last project the user had open, so the next launch
+// can reopen it instead of dropping into the demo. Written by loadProject().
+const LAST_PROJECT_KEY = 'guitar_autostomp_last_project_id'
+
+/** Persist the id of the project the user most recently opened. */
+export function setLastOpenedProjectId(id: string | number | null | undefined) {
+  if (typeof window === 'undefined') return
+  try {
+    if (id == null || id === '') localStorage.removeItem(LAST_PROJECT_KEY)
+    else localStorage.setItem(LAST_PROJECT_KEY, String(id))
+  } catch { /* ignore */ }
+}
+
+/** Read the id of the last opened project (null if none). */
+export function getLastOpenedProjectId(): string | null {
+  if (typeof window === 'undefined') return null
+  try { return localStorage.getItem(LAST_PROJECT_KEY) } catch { return null }
+}
 
 function loadSaved(): SavedProject {
   if (typeof window === 'undefined') return {}
@@ -122,14 +140,16 @@ function isValidTrigger(t: unknown): t is ProjectTrigger {
   )
 }
 
-// Demo triggers removed — app now starts with a fresh empty project.
-// Kept as empty array for any legacy references.
-const DEMO_TRIGGERS: ProjectTrigger[] = []
+const DEMO_TRIGGERS: ProjectTrigger[] = [
+  { id: 1, time: 0, pc: 0, name: 'Clean', color: TRIGGER_COLORS[0] },
+  { id: 2, time: 12.5, pc: 2, name: 'Lead', color: TRIGGER_COLORS[2] },
+  { id: 3, time: 28, pc: 3, name: 'Heavy', color: TRIGGER_COLORS[3] },
+]
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
   projects: [], currentProject: null,
-  triggers: [], audioFile: null, waveformData: null,
-  projectName: 'Untitled Project', isDemo: false, sidebarOpen: false,
+  triggers: DEMO_TRIGGERS, audioFile: null, waveformData: null,
+  projectName: 'Demo Project', isDemo: true, sidebarOpen: false,
   presets: PRESET_TONES,
   recentTones: [],
   isDirty: false,
@@ -214,10 +234,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
     colorIdx = p.triggers?.length ?? 0
     set({ currentProject: p, projectName: p.name, triggers: p.triggers || [], audioFile: newAudioFile, waveformData: null, isDemo: false, isDirty: false })
+    // Remember this as the project to reopen on next launch.
+    setLastOpenedProjectId(p.id)
     console.log(`[ProjectStore:loadProject] DONE. duration=${pb.duration}`)
   },
-  loadDemoProject: () => { colorIdx = 0; set({ currentProject: null, projectName: 'Untitled Project', triggers: [], audioFile: null, waveformData: null, isDemo: false, isDirty: false }) },
-  newProject: () => { colorIdx = 0; set({ currentProject: null, projectName: 'Untitled Project', triggers: [], audioFile: null, waveformData: null, isDemo: false, isDirty: false }) },
+  loadDemoProject: () => { colorIdx = DEMO_TRIGGERS.length; set({ currentProject: null, projectName: 'Demo Project', triggers: DEMO_TRIGGERS, audioFile: null, waveformData: null, isDemo: true, isDirty: false }) },
+  newProject: () => { colorIdx = 0; setLastOpenedProjectId(null); set({ currentProject: null, projectName: 'Untitled Project', triggers: [], audioFile: null, waveformData: null, isDemo: false, isDirty: false }) },
   markClean: () => set({ isDirty: false }),
 }))
 
@@ -262,10 +284,24 @@ export function hydrateProjectStore() {
     })
   } else {
     // No draft to recover (or the draft belonged to an already-saved project).
-    // Discard any legacy draft and start clean; the sidebar will load real
-    // projects from the backend. Only UI preferences (recent tones) are kept.
+    // Discard any legacy draft and start on a fresh, blank "Untitled Project"
+    // *synchronously* — the store's initial state is the demo project, and if we
+    // left it untouched the UI would flash (or get stuck on) the demo while the
+    // sidebar asynchronously fetches the backend list. Explicitly clearing the
+    // demo here guarantees the user never lands on the demo by default. The
+    // sidebar will subsequently reopen the last-opened project if one exists.
     if (s.currentProjectId) clearDraft()
-    useProjectStore.setState({ recentTones: recent })
+    colorIdx = 0
+    useProjectStore.setState({
+      currentProject: null,
+      triggers: [],
+      audioFile: null,
+      waveformData: null,
+      projectName: 'Untitled Project',
+      isDemo: false,
+      isDirty: false,
+      recentTones: recent,
+    })
   }
   // Allow a microtask for subscriptions to settle, then unlock
   Promise.resolve().then(() => { isHydrating = false })

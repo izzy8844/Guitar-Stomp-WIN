@@ -22,6 +22,7 @@ export function ToneSegments({ onTriggerDrag }: ToneSegmentsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const visibleWidthRef = useRef(800)
+  const [visibleWidth, setVisibleWidth] = useState(800)
   const duration = usePlaybackStore((s) => s.duration)
   const zoom = usePlaybackStore((s) => s.zoom)
   const triggers = useProjectStore((s) => s.triggers)
@@ -34,7 +35,7 @@ export function ToneSegments({ onTriggerDrag }: ToneSegmentsProps) {
   // Use same width calculation as Waveform: visibleWidth * zoom
   const getCanvasWidth = useCallback(() => {
     return Math.round(visibleWidthRef.current * zoom)
-  }, [zoom])
+  }, [zoom, visibleWidth])
 
   // Track container width with ResizeObserver
   useEffect(() => {
@@ -42,11 +43,14 @@ export function ToneSegments({ onTriggerDrag }: ToneSegmentsProps) {
     if (!el) return
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        visibleWidthRef.current = entry.contentRect.width
+        const w = entry.contentRect.width
+        visibleWidthRef.current = w
+        setVisibleWidth(w)
       }
     })
     ro.observe(el)
     visibleWidthRef.current = el.clientWidth
+    setVisibleWidth(el.clientWidth)
     return () => ro.disconnect()
   }, [])
 
@@ -56,6 +60,18 @@ export function ToneSegments({ onTriggerDrag }: ToneSegmentsProps) {
       currentTickRef.current = state.currentTick
     })
     return unsub
+  }, [])
+
+  // Sync scroll position from Waveform's broadcast event
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const scrollLeft = (e as CustomEvent).detail as number
+      if (scrollRef.current) {
+        scrollRef.current.scrollLeft = scrollLeft
+      }
+    }
+    window.addEventListener('timeline-scroll', handler)
+    return () => window.removeEventListener('timeline-scroll', handler)
   }, [])
 
   // Hit-test: find trigger near mouse X (within 8px of left edge)
@@ -221,7 +237,7 @@ export function ToneSegments({ onTriggerDrag }: ToneSegmentsProps) {
   const cursor = cursorStyle === 'grabbing' ? 'grabbing' : cursorStyle === 'ew-resize' ? 'ew-resize' : 'default'
 
   return (
-    <div ref={scrollRef} className="overflow-x-auto overflow-y-hidden" style={{ maxHeight: SEG_H }}>
+    <div ref={scrollRef} className="overflow-x-hidden overflow-y-hidden" style={{ maxHeight: SEG_H }}>
       <div ref={containerRef} style={{ width: getCanvasWidth(), minWidth: '100%' }}>
         <canvas
           ref={canvasRef}
