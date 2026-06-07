@@ -1,0 +1,43 @@
+appId: com.autostomp.guitar
+productName: Guitar AutoStomp
+copyright: Copyright © 2025 AutoStomp
+
+# Only include electron main process files in the app asar
+files:
+  - electron/main.js
+  - electron/preload.js
+  - package.json
+
+# Backend gets copied via extraResources (no node_modules issue)
+extraResources:
+  - from: dist-backend/
+    to: backend
+    filter:
+      - "**/*"
+
+# Static HTML export is copied via afterPack hook
+afterPack: scripts/afterPack.js
+
+# ── Windows ──
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: null  # TODO: Add icon.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Guitar AutoStomp
+  artifactName: "Guitar-AutoStomp-Setup-${version}.${ext}"
+  uninstallDisplayName: Guitar AutoStomp
+
+directories:
+  output: release
+
+asar: true
+npmRebuild: false
