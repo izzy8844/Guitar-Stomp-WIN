@@ -14,7 +14,7 @@ from pathlib import Path
 
 SYSTEM = platform.system()
 
-# ─── Application Data Root ───────────────────────────────────────────���─────────
+# ─── Application Data Root ─────────────────────────────────────────────────────
 # In packaged mode (PyInstaller), use a persistent user data directory.
 # In development mode, use the project root directory.
 

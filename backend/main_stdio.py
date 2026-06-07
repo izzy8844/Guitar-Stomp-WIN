@@ -106,7 +106,7 @@ def handle_health(params):
     return {"status": "ok", "version": "1.0.0"}
 
 
-# ��─ Audio ──
+# ── Audio ──
 
 def handle_audio_upload(params):
     file_path = params.get("path", "")
