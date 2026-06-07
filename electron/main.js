@@ -4,6 +4,7 @@ const fs = require('fs');
 const { spawn, execSync } = require('child_process');
 const { pathToFileURL } = require('url');
 const { randomUUID } = require('crypto');
+const os = require('os');
 
 // --- Windows High DPI Support ---
 app.commandLine.appendSwitch('high-dpi-support', '1');
@@ -282,6 +283,73 @@ ipcMain.handle('api-request', async (_event, { method: httpMethod, path: reqPath
 ipcMain.handle('fire-trigger', async (_event, triggerData) => {
   return rpcCall('midi.fire_trigger', triggerData, 5000);
 });
+
+// ── readAudioFile: Direct file read via Electron main (handles MP4→WAV via FFmpeg) ──
+const VIDEO_EXTS = new Set(['.mp4','.mov','.avi','.mkv','.webm','.wmv','.flv','.mts','.m2ts'])
+
+function resolveFfmpeg() {
+  // Packaged: resources/backend/guitar-autostomp-backend/_internal/ffmpeg.exe
+  const packagedPath = path.join(process.resourcesPath, 'backend', 'guitar-autostomp-backend', '_internal', 'ffmpeg.exe')
+  if (fs.existsSync(packagedPath)) return packagedPath
+  // Dev: backend/ffmpeg.exe in project root
+  const devPath = path.join(__dirname, '..', 'backend', 'ffmpeg.exe')
+  if (fs.existsSync(devPath)) return devPath
+  // System PATH fallback
+  return 'ffmpeg'
+}
+
+ipcMain.handle('read-audio-file', async (_event, filePath) => {
+  const ext = path.extname(filePath).toLowerCase()
+  const stat = fs.statSync(filePath)
+  const isVideo = VIDEO_EXTS.has(ext)
+
+  if (!isVideo) {
+    // Audio file: read directly — no conversion needed
+    const buf = fs.readFileSync(filePath)
+    return { buffer: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength), converted: false, originalSize: stat.size }
+  }
+
+  // Video file: extract audio via ffmpeg → WAV pipe
+  const ffmpegPath = resolveFfmpeg()
+  console.log(`[readAudioFile] Converting video: ${filePath} (${(stat.size/1024/1024).toFixed(1)}MB) → WAV via ${ffmpegPath}`)
+
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    const ffmpeg = spawn(ffmpegPath, [
+      '-i', filePath,
+      '-vn',              // no video
+      '-acodec', 'pcm_s16le',  // 16-bit PCM WAV
+      '-ar', '44100',     // 44.1kHz
+      '-ac', '2',         // stereo
+      '-f', 'wav',        // WAV format
+      'pipe:1'            // to stdout
+    ], { stdio: ['ignore', 'pipe', 'pipe'] })
+
+    ffmpeg.stdout.on('data', chunk => chunks.push(chunk))
+
+    let stderr = ''
+    ffmpeg.stderr.on('data', d => { stderr += d.toString() })
+
+    ffmpeg.on('close', code => {
+      if (code !== 0) {
+        console.error(`[readAudioFile] FFmpeg exit ${code}: ${stderr.slice(-200)}`)
+        return reject(new Error(`FFmpeg conversion failed (exit ${code})`))
+      }
+      const buf = Buffer.concat(chunks)
+      console.log(`[readAudioFile] Converted: ${(stat.size/1024/1024).toFixed(1)}MB video → ${(buf.length/1024/1024).toFixed(1)}MB WAV`)
+      resolve({
+        buffer: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+        converted: true,
+        originalSize: stat.size
+      })
+    })
+
+    ffmpeg.on('error', err => {
+      console.error(`[readAudioFile] FFmpeg spawn error:`, err.message)
+      reject(new Error(`FFmpeg not found or failed to start: ${err.message}`))
+    })
+  })
+})
 
 /**
  * Map HTTP method + path to RPC method name.

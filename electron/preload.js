@@ -64,6 +64,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.invoke('fire-trigger', triggerData);
   },
 
+  /**
+   * Read an audio file via Electron main process.
+   * For video files (MP4, MOV, etc.), ffmpeg is used to extract audio to WAV first.
+   * Returns { buffer: ArrayBuffer, converted: boolean, originalSize: number }
+   */
+  readAudioFile: (filePath) => {
+    return parseErrorCode(ipcRenderer.invoke('read-audio-file', filePath));
+  },
+
   // ─── Legacy IPC (kept for backward compatibility during migration) ─────────
 
   /**
@@ -71,7 +80,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * Supported: 'api-request' (maps HTTP-style calls to RPC under the hood)
    */
   invoke: (channel, ...args) => {
-    const allowedChannels = ['api-request', 'rpc-call', 'fire-trigger'];
+    const allowedChannels = ['api-request', 'rpc-call', 'fire-trigger', 'read-audio-file'];
     if (allowedChannels.includes(channel)) {
       return parseErrorCode(ipcRenderer.invoke(channel, ...args));
     }
