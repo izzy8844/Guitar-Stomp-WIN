@@ -103,13 +103,13 @@ NEURAL_DSP_USER_CONFIG.mkdir(parents=True, exist_ok=True)
 # Legacy alias
 MIDI_MAPPINGS_BASE = NEURAL_DSP_USER_CONFIG
 
-# ─── Projects Directory ────────────────────────────────────────────────────────
+# ─── Projects Directory ───────────────────────────────────────���────────────────
 PROJECTS_DIR = PROJECT_ROOT / "data" / "projects"
 PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ─── Constants ─────────────────────────────────────────────────────────────────
 AUDIO_SUPPORTED_FORMATS = [".wav", ".mp3", ".m4a", ".ogg", ".flac", ".aac", ".wma", ".mp4"]
-AUDIO_MAX_SIZE_MB = 50
+AUDIO_MAX_SIZE_MB = 500
 MIDI_DEFAULT_CHANNEL = 0
 WS_TICK_INTERVAL_MS = 50
 SCHEDULER_ADVANCE_MS = 5

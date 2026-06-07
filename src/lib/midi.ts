@@ -74,6 +74,3 @@ export function onPortChange(
     portChangeListeners.delete(fn);
   };
 }
-
-
-`

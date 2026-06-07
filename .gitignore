@@ -43,3 +43,12 @@ next-env.d.ts
 # python
 __pycache__/
 *.pyc
+
+# build artifacts
+/release/
+/dist-backend/
+/backend/dist/
+/backend/build/
+/backend/mappings/
+*.exe
+*.zip

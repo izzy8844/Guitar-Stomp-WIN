@@ -368,5 +368,3 @@ def delete_mapping(plugin_name: str, filename: str) -> bool:
 def list_installed_mappings(plugin_name: str) -> List[dict]:
     """List installed mapping files for a plugin with parsed tone data."""
     return [m.model_dump() for m in list_mappings(plugin_name)]
-
-`

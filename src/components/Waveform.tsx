@@ -171,20 +171,37 @@ export function Waveform({ waveformData, onTriggerDrag, onAddTrigger, onUpload }
     ctx.fillStyle = 'rgba(255,255,255,0.06)'
     ctx.fillRect(0, RULER_H - 1, w, 1)
 
-    // Time labels — adaptive interval
+    // Time labels — adaptive interval with sub-ticks for fine zoom levels
     const secsPerPx = totalDur / w
     const rawInterval = secsPerPx * 100
-    const niceIntervals = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300]
+    const niceIntervals = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300]
     let majorInterval = niceIntervals[niceIntervals.length - 1]
     for (const iv of niceIntervals) { if (iv >= rawInterval) { majorInterval = iv; break } }
+    // Sub-tick interval: divide major into 5 parts (or 2 for very small intervals)
+    const subDivisions = majorInterval <= 0.5 ? 5 : majorInterval <= 2 ? 5 : 4
+    const subInterval = majorInterval / subDivisions
     ctx.font = '9px "SF Mono", "Fira Code", monospace'
+    // Draw sub-ticks first (behind major labels)
+    for (let t = 0; t <= totalDur; t += subInterval) {
+      const x = Math.round((t / totalDur) * w)
+      if (x > w - 5) break
+      // Skip positions that coincide with major ticks
+      const isMajor = Math.abs(t - Math.round(t / majorInterval) * majorInterval) < subInterval * 0.1
+      if (!isMajor) {
+        ctx.fillStyle = 'rgba(255,255,255,0.08)'
+        ctx.fillRect(x, RULER_H - 3, 1, 3)
+      }
+    }
+    // Draw major ticks with time labels
     for (let t = 0; t <= totalDur; t += majorInterval) {
       const x = Math.round((t / totalDur) * w)
       if (x > w - 30) break
       ctx.fillStyle = 'rgba(255,255,255,0.15)'
       ctx.fillRect(x, RULER_H - 5, 1, 5)
       ctx.fillStyle = 'rgba(255,255,255,0.5)'
-      ctx.fillText(formatRulerTime(t), x + 3, RULER_H - 9)
+      // Use millisecond precision for very fine intervals
+      const label = majorInterval < 1 ? `${t.toFixed(1)}s` : formatRulerTime(t)
+      ctx.fillText(label, x + 3, RULER_H - 9)
     }
 
     // ===== Waveform background =====

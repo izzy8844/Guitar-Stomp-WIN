@@ -122,16 +122,14 @@ function isValidTrigger(t: unknown): t is ProjectTrigger {
   )
 }
 
-const DEMO_TRIGGERS: ProjectTrigger[] = [
-  { id: 1, time: 0, pc: 0, name: 'Clean', color: TRIGGER_COLORS[0] },
-  { id: 2, time: 12.5, pc: 2, name: 'Lead', color: TRIGGER_COLORS[2] },
-  { id: 3, time: 28, pc: 3, name: 'Heavy', color: TRIGGER_COLORS[3] },
-]
+// Demo triggers removed — app now starts with a fresh empty project.
+// Kept as empty array for any legacy references.
+const DEMO_TRIGGERS: ProjectTrigger[] = []
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
   projects: [], currentProject: null,
-  triggers: DEMO_TRIGGERS, audioFile: null, waveformData: null,
-  projectName: 'Demo Project', isDemo: true, sidebarOpen: false,
+  triggers: [], audioFile: null, waveformData: null,
+  projectName: 'Untitled Project', isDemo: false, sidebarOpen: false,
   presets: PRESET_TONES,
   recentTones: [],
   isDirty: false,
@@ -218,7 +216,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set({ currentProject: p, projectName: p.name, triggers: p.triggers || [], audioFile: newAudioFile, waveformData: null, isDemo: false, isDirty: false })
     console.log(`[ProjectStore:loadProject] DONE. duration=${pb.duration}`)
   },
-  loadDemoProject: () => { colorIdx = DEMO_TRIGGERS.length; set({ currentProject: null, projectName: 'Demo Project', triggers: DEMO_TRIGGERS, audioFile: null, waveformData: null, isDemo: true, isDirty: false }) },
+  loadDemoProject: () => { colorIdx = 0; set({ currentProject: null, projectName: 'Untitled Project', triggers: [], audioFile: null, waveformData: null, isDemo: false, isDirty: false }) },
   newProject: () => { colorIdx = 0; set({ currentProject: null, projectName: 'Untitled Project', triggers: [], audioFile: null, waveformData: null, isDemo: false, isDirty: false }) },
   markClean: () => set({ isDirty: false }),
 }))

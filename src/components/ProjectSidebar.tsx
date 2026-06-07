@@ -101,8 +101,16 @@ export function ProjectSidebar() {
             audioFile: store.audioFile,
           }))
           // Only clear dirty if no further edits happened during the request.
-          if (useProjectStore.getState().isDirty && useProjectStore.getState().currentProject?.id === store.currentProject.id) {
-            useProjectStore.getState().markClean()
+          const latest = useProjectStore.getState()
+          if (latest.isDirty && latest.currentProject?.id === store.currentProject.id) {
+            // Also sync trigger count to the sidebar list
+            const cid = store.currentProject.id
+            const triggerCount = latest.triggers.length
+            useProjectStore.setState((s) => ({
+              ...s,
+              projects: s.projects.map(p => p.id === cid ? { ...p, triggerCount } : p),
+            }))
+            latest.markClean()
           }
         } catch {
           // Keep dirty so a later edit / manual save retries; surface nothing intrusive here.

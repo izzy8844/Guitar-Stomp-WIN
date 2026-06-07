@@ -124,5 +124,3 @@ echo Output: release\Guitar-AutoStomp-Setup-1.0.0.exe
 echo.
 
 endlocal
-
-`

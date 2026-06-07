@@ -20,6 +20,7 @@ import ExportButton from '@/components/ExportButton'
 import { toast } from '@/components/Toast'
 
 import { initAutoSetup, fetchWaveform, uploadAudio, updateProject, createProject } from '@/lib/api'
+import { headerPaddingLeft } from '@/hooks/usePlatform'
 import { useMapperStore } from '@/stores/mapperStore'
 import { useUndoStore } from '@/stores/undoStore'
 
@@ -157,10 +158,6 @@ export default function Home() {
 
   const handleSave = useCallback(async () => {
     const store = useProjectStore.getState()
-    if (store.isDemo) {
-      toast.info('Demo project cannot be saved. Create a new project first.')
-      return
-    }
     setSaving(true)
     try {
       const projectData = {
@@ -179,10 +176,12 @@ export default function Home() {
         // Update existing project
         const result = await updateProject(String(store.currentProject.id), projectData)
         if (result.project) {
-          // Update the currentProject reference with latest data
-          useProjectStore.setState({
-            currentProject: { ...store.currentProject, name: store.projectName, triggers: store.triggers, audioFile: store.audioFile },
-          })
+          const cid = store.currentProject.id
+          // Update the currentProject reference AND sync trigger count in sidebar list
+          useProjectStore.setState((s) => ({
+            currentProject: { ...store.currentProject!, name: store.projectName, triggers: store.triggers, audioFile: store.audioFile },
+            projects: s.projects.map(p => p.id === cid ? { ...p, triggerCount: store.triggers.length } : p),
+          }))
           store.markClean()
           toast.success('Project saved')
         }
@@ -190,14 +189,17 @@ export default function Home() {
         // Create new project
         const result = await createProject(projectData as Parameters<typeof createProject>[0])
         if (result.project) {
-          useProjectStore.setState({
-            currentProject: {
-              id: result.project.id,
-              name: result.project.name,
-              triggers: store.triggers,
-              audioFile: store.audioFile,
-            },
-          })
+          const newProj = {
+            id: result.project.id,
+            name: result.project.name,
+            triggers: store.triggers,
+            audioFile: store.audioFile,
+            triggerCount: store.triggers.length,
+          }
+          useProjectStore.setState((s) => ({
+            currentProject: newProj,
+            projects: [newProj, ...s.projects],
+          }))
           store.markClean()
           toast.success('Project created')
         }
@@ -271,10 +273,10 @@ export default function Home() {
       engine.stop()
     }
 
-    // Validate file size (max 100MB)
-    const MAX_SIZE = 100 * 1024 * 1024
+    // Validate file size (max 500MB — covers long WAV backing tracks)
+    const MAX_SIZE = 500 * 1024 * 1024
     if (file.size > MAX_SIZE) {
-      toast.error('File too large. Maximum size is 100 MB.')
+      toast.error('File too large. Maximum size is 500 MB.')
       e.target.value = ''
       return
     }
@@ -327,7 +329,7 @@ export default function Home() {
   return (
     <div className="flex h-screen flex-col bg-[#0a0a0a]">
       {/* Header */}
-      <header className="flex items-center justify-between pl-20 pr-6 py-3 border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-sm shrink-0">
+      <header className={`flex items-center justify-between ${headerPaddingLeft()} pr-6 py-3 border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-sm shrink-0`}>
         <div className="flex items-center gap-3">
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800" title="Toggle sidebar">
             <Menu className="w-4 h-4" />
